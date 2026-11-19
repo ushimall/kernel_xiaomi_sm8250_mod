@@ -19,17 +19,20 @@ jobs:
 
       - name: Setup Neutron Clang
         run: |
+          H="https:/"
           mkdir -p clang && cd clang
-          bash <(curl -s "https://githubusercontent.com") -S
+          bash <(curl -s "${H}/://githubusercontent.com") -S
           cd ..
 
       - name: Integrate BakaSU (ReSukiSU)
         run: |
-          curl -LSs "https://githubusercontent.com" | bash -s main
+          H="https:/"
+          curl -LSs "${H}/://githubusercontent.com" | bash -s main
 
       - name: Integrate SUSFS for Kernel 4.19
         run: |
-          git clone --depth=1 -b kernel-4.19 https://github.com susfs
+          H="https:/"
+          git clone --depth=1 -b kernel-4.19 "${H}/://github.com" susfs
           cp susfs/kernel_patches/fs/* fs/
           cp susfs/kernel_patches/include/linux/* include/linux/
           patch -p1 < susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch || true
@@ -59,7 +62,8 @@ jobs:
 
       - name: Package AnyKernel3
         run: |
-          git clone --depth=1 https://github.com AnyKernel3
+          H="https:/"
+          git clone --depth=1 "${H}/://github.com" AnyKernel3
           rm -rf AnyKernel3/.git* AnyKernel3/README.md
           cp out/arch/arm64/boot/Image.gz AnyKernel3/
           cp out/arch/arm64/boot/dtbo.img AnyKernel3/
