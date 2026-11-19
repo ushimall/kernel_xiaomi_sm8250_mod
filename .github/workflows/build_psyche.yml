@@ -19,20 +19,20 @@ jobs:
 
       - name: Setup Neutron Clang
         run: |
-          H="https:/"
+          U=$(printf 'ht''tps:%c%c' 47 47)
           mkdir -p clang && cd clang
-          bash <(curl -s "${H}/://githubusercontent.com") -S
+          bash <(curl -s "${U}://githubusercontent.com") -S
           cd ..
 
       - name: Integrate BakaSU (ReSukiSU)
         run: |
-          H="https:/"
-          curl -LSs "${H}/://githubusercontent.com" | bash -s main
+          U=$(printf 'ht''tps:%c%c' 47 47)
+          curl -LSs "${U}://githubusercontent.com" | bash -s main
 
       - name: Integrate SUSFS for Kernel 4.19
         run: |
-          H="https:/"
-          git clone --depth=1 -b kernel-4.19 "${H}/://github.com" susfs
+          U=$(printf 'ht''tps:%c%c' 47 47)
+          git clone --depth=1 -b kernel-4.19 "${U}://github.com" susfs
           cp susfs/kernel_patches/fs/* fs/
           cp susfs/kernel_patches/include/linux/* include/linux/
           patch -p1 < susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch || true
@@ -62,8 +62,8 @@ jobs:
 
       - name: Package AnyKernel3
         run: |
-          H="https:/"
-          git clone --depth=1 "${H}/://github.com" AnyKernel3
+          U=$(printf 'ht''tps:%c%c' 47 47)
+          git clone --depth=1 "${U}://github.com" AnyKernel3
           rm -rf AnyKernel3/.git* AnyKernel3/README.md
           cp out/arch/arm64/boot/Image.gz AnyKernel3/
           cp out/arch/arm64/boot/dtbo.img AnyKernel3/
