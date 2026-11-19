@@ -29,12 +29,14 @@ jobs:
 
       - name: Integrate SUSFS for Kernel 4.19
         run: |
-          git clone --depth=1 -b kernel-4.19 https://gitlab.com susfs
+          git clone --depth=1 -b kernel-4.19 https://github.com susfs
           cp susfs/kernel_patches/fs/* fs/
           cp susfs/kernel_patches/include/linux/* include/linux/
           patch -p1 < susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch || true
-          cd KernelSU && patch -p1 < ../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || true
-          cd ..
+          if [ -d "KernelSU" ]; then
+            cd KernelSU && patch -p1 < ../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || true
+            cd ..
+          fi
 
       - name: Enable SUSFS & KSU Configs
         run: |
