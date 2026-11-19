@@ -1,4 +1,4 @@
-name: Build Kernel Psyche (ReSukiSU/BakaSU)
+name: Build Kernel Psyche (BakaSU + SUSFS)
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python3 device-tree-compiler
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python3 device-tree-compiler gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
 
       - name: Setup Neutron Clang
         run: |
@@ -23,9 +23,29 @@ jobs:
           bash <(curl -s "https://githubusercontent.com") -S
           cd ..
 
-      - name: Integrate ReSukiSU / BakaSU
+      - name: Integrate BakaSU (ReSukiSU)
         run: |
           curl -LSs "https://githubusercontent.com" | bash -s main
+
+      - name: Integrate SUSFS for Kernel 4.19
+        run: |
+          git clone --depth=1 -b kernel-4.19 https://gitlab.com susfs
+          cp susfs/kernel_patches/fs/* fs/
+          cp susfs/kernel_patches/include/linux/* include/linux/
+          patch -p1 < susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch || true
+          cd KernelSU && patch -p1 < ../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || true
+          cd ..
+
+      - name: Enable SUSFS & KSU Configs
+        run: |
+          echo "CONFIG_KSU=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> arch/arm64/configs/psyche_defconfig
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> arch/arm64/configs/psyche_defconfig
 
       - name: Build Kernel for Psyche
         run: |
@@ -33,7 +53,7 @@ jobs:
           export SUBARCH=arm64
           export PATH="$PWD/clang/bin:$PATH"
           make O=out ARCH=arm64 psyche_defconfig
-          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- Image.gz dtbo.img
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- Image.gz dtbo.img
 
       - name: Package AnyKernel3
         run: |
@@ -42,10 +62,10 @@ jobs:
           cp out/arch/arm64/boot/Image.gz AnyKernel3/
           cp out/arch/arm64/boot/dtbo.img AnyKernel3/
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' AnyKernel3/anykernel.sh
-          cd AnyKernel3 && zip -r9 ../Psyche-BakaSU-Kernel.zip *
+          cd AnyKernel3 && zip -r9 ../Psyche-BakaSU-SUSFS.zip *
 
       - name: Upload Kernel Zip
         uses: actions/upload-artifact@v4
         with:
-          name: Psyche-BakaSU-Kernel
-          path: Psyche-BakaSU-Kernel.zip
+          name: Psyche-BakaSU-SUSFS
+          path: Psyche-BakaSU-SUSFS.zip
